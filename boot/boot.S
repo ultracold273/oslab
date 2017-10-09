@@ -25,6 +25,9 @@ start:
   #   For backwards compatibility with the earliest PCs, physical
   #   address line 20 is tied low, so that addresses higher than
   #   1MB wrap around to zero by default.  This code undoes this.
+  # This extends the memory space from 1MB to 2MB, only for compatibility issues
+  # This is achieved by seting special ports (PS/2) with special commands
+  # 0x60 -- PS/2 Command Port 0x64 -- PS/2 Data Port
 seta20.1:
   inb     $0x64,%al               # Wait for not busy
   testb   $0x2,%al
@@ -45,6 +48,9 @@ seta20.2:
   # and segment translation that makes virtual addresses 
   # identical to their physical addresses, so that the 
   # effective memory map does not change during the switch.
+  # lxwei:
+  # At this time, only segmentation will be enabled, although
+  # the linear address (physical address) is identical to the virtual address
   lgdt    gdtdesc
   movl    %cr0, %eax
   orl     $CR0_PE_ON, %eax
@@ -52,6 +58,8 @@ seta20.2:
   
   # Jump to next instruction, but in 32-bit code segment.
   # Switches processor into 32-bit mode.
+  # lxwei:
+  # After this instruction, the processor enters the 32-bit mode
   ljmp    $PROT_MODE_CSEG, $protcseg
 
   .code32                     # Assemble for 32-bit mode
