@@ -47,9 +47,58 @@
  * Lab 3: Your code here for generating entry points for the different traps.
  */
 
+#define H_NAME(N)	hdl##N
+#define T(N) 		TRAPHANDLER(H_NAME(N), N)
+#define TN(N)		TRAPHANDLER_NOEC(H_NAME(N), N)
 
+// 0, 1, 3 - 7 CPU does not push an error code (NO)
+TN(0);
+TN(1);
+TN(2);
+TN(3);
+TN(4);
+TN(5);
+TN(6);
+TN(7);
+
+// 8 CPU always pushes 0
+T(8);
+
+// 9 NO
+//TN(9);
+
+// 10 - 14 YES
+T(10);
+T(11);
+T(12);
+T(13);
+T(14);
+
+// T(15);
+
+// 16 NO
+TN(16);
+
+T(17);
+TN(18);
+TN(19);
+
+TN(48);
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+.globl _alltraps
+_alltraps:
+	pushl 	%ds; 	/* push ds */
+	pushl 	%es;	/* push es */
+	pushal; 		/* push all general registers in PushRegs */
 
+	movl	$(GD_KD), %eax;
+	movw 	%ax, %ds;
+	movw 	%ax, %es;
+	pushl 	%esp;
+	call 	trap;
+	/* the call trap never return. */
+spin:
+	jmp		spin;

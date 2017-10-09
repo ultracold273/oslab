@@ -58,6 +58,8 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+#define H_NAME(N)	hdl##N
+#define H_NAME_DL(N)	extern void * hdl##N ()
 
 void
 trap_init(void)
@@ -65,6 +67,47 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	H_NAME_DL(0);
+	H_NAME_DL(1);
+	H_NAME_DL(2);
+	H_NAME_DL(3);
+	H_NAME_DL(4);
+	H_NAME_DL(5);
+	H_NAME_DL(6);
+	H_NAME_DL(7);
+	H_NAME_DL(8);
+	H_NAME_DL(10);
+	H_NAME_DL(11);
+	H_NAME_DL(12);
+	H_NAME_DL(13);
+	H_NAME_DL(14);
+	H_NAME_DL(16);
+	H_NAME_DL(17);
+	H_NAME_DL(18);
+	H_NAME_DL(19);
+	H_NAME_DL(48);
+	SETGATE(idt[0], 0, GD_KT, H_NAME(0), 0);
+	SETGATE(idt[1], 0, GD_KT, H_NAME(1), 0);
+	SETGATE(idt[2], 0, GD_KT, H_NAME(2), 0);
+	SETGATE(idt[3], 0, GD_KT, H_NAME(3), 3);
+	SETGATE(idt[4], 0, GD_KT, H_NAME(4), 0);
+	SETGATE(idt[5], 0, GD_KT, H_NAME(5), 0);
+	SETGATE(idt[6], 0, GD_KT, H_NAME(6), 0);
+	SETGATE(idt[7], 0, GD_KT, H_NAME(7), 0);
+	SETGATE(idt[8], 0, GD_KT, H_NAME(8), 0);
+	//SETGATE(idt[9], 0, GD_KT, H_NAME(9), 0);
+	SETGATE(idt[10], 0, GD_KT, H_NAME(10), 0);
+	SETGATE(idt[11], 0, GD_KT, H_NAME(11), 0);
+	SETGATE(idt[12], 0, GD_KT, H_NAME(12), 0);
+	SETGATE(idt[13], 0, GD_KT, H_NAME(13), 0);
+	SETGATE(idt[14], 0, GD_KT, H_NAME(14), 0);
+	//SETGATE(idt[15], 0, GD_KT, H_NAME(15), 0);
+	SETGATE(idt[16], 0, GD_KT, H_NAME(16), 0);
+	SETGATE(idt[17], 0, GD_KT, H_NAME(17), 0);
+	SETGATE(idt[18], 0, GD_KT, H_NAME(18), 0);
+	SETGATE(idt[18], 0, GD_KT, H_NAME(18), 0);
+	SETGATE(idt[19], 0, GD_KT, H_NAME(19), 0);
+	SETGATE(idt[48], 0, GD_KT, H_NAME(48), 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -143,6 +186,21 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	if (tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);
+		return ;
+	} else if (tf->tf_trapno == T_BRKPT) {
+		monitor(tf);
+		return ;
+	} else if (tf->tf_trapno == T_SYSCALL) {
+		int ret_val;
+		ret_val = syscall(tf->tf_regs.reg_eax, 
+			tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
+			tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+		// Return value on eax
+		tf->tf_regs.reg_eax = ret_val;
+		return ;
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -204,6 +262,10 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if ((tf->tf_cs & 3)== 0) {
+		print_trapframe(tf);
+		panic("page fault in kernel mode.");
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
