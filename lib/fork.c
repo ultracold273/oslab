@@ -78,7 +78,24 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	// panic("fork not implemented");
+	envid_t envid; 
+	uint8_t *addr;
+	// Install page fault handler
+	set_pgfault_handler(pgfault);
+
+	// Create the child process;
+	if ((envid = sys_exofork()) < 0) {
+		panic("sys_exofork() failed.\n");
+	} else if (envid == 0) {
+		return 0;
+	}
+
+	// Parent's job: copy the address space
+	for(addr = (uint8_t *)UTEXT; addr < (uint8_t *)UTOP; addr += PGSIZE) {
+		duppage();
+	}
+	
 }
 
 // Challenge!
