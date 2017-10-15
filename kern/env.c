@@ -312,7 +312,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	size_t i;
 	struct PageInfo * p;
 	for (i = 0, va = va_st;i < num_pages; i++, va += PGSIZE) {
-		p = page_alloc(0);
+		p = page_alloc(ALLOC_ZERO);
 		if (!p) panic("page_alloc failed.\n");
 		if (0 > page_insert(e->env_pgdir, p, va, PTE_P | PTE_U | PTE_W)) {
 			panic("page_insert failed.\n");

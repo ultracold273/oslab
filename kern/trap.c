@@ -365,10 +365,41 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	pte_t * pte;
+	uint32_t esp = tf->tf_esp;
+	struct UTrapframe * utrap;
+	// The UXSTACKTOP page shall already be mapped when the user program register its pgfault_upcall.
+	if (curenv->env_pgfault_upcall) {
+		pte = pgdir_walk(curenv->env_pgdir, (void *)(UXSTACKTOP - PGSIZE), false);
+		// check the permission
+		if ((*pte & (PTE_P | PTE_U | PTE_W)) == (PTE_P | PTE_U | PTE_W)) {
+			// check the esp
+			if (esp < USTACKTOP) {
+				// First enter the fault handler
+				utrap = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
+			} else if (esp < UXSTACKTOP && esp >= (UXSTACKTOP - PGSIZE + sizeof(struct UTrapframe) + 4)) {
+				// In exception stack, checking not overflow
+				utrap = (struct UTrapframe *)(esp - sizeof(struct UTrapframe) - 4);
+			} else {
+				goto destroy;
+			}
+			utrap->utf_fault_va = fault_va;
+			utrap->utf_err = tf->tf_err;
+			utrap->utf_regs = tf->tf_regs;
+			utrap->utf_eip = tf->tf_eip; // Trap time eip
+			utrap->utf_eflags = tf->tf_eflags;
+			utrap->utf_esp = tf->tf_esp;
 
+			curenv->env_tf.tf_esp = (uintptr_t) utrap;
+			curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+			env_run(curenv);
+		}
+	}
+
+destroy:
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
+	curenv->env_id, fault_va, tf->tf_eip);
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
