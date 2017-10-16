@@ -71,16 +71,17 @@ duppage(envid_t envid, unsigned pn)
 	// LAB 4: Your code here.
 	//panic("duppage not implemented");
 	pte_t pte = uvpt[pn];
+	void * va = pn * PGSIZE;
 	if ((pte & PTE_W) == PTE_W || (pte & PTE_COW) == PTE_COW) {
-		if ((r = sys_page_map(0, pn << 12, envid, pn << 12,(PTE_U | PTE_P | PTE_COW))) < 0) {
+		if ((r = sys_page_map(0, va, envid, va,(PTE_U | PTE_P | PTE_COW))) < 0) {
 			return r;
 		}
 		// UVPT cannot write by user, have to call kernel to map it
-		if ((r = sys_page_map(0, pn << 12, 0, pn << 12, (PTE_U | PTE_P | PTE_COW))) < 0) {
+		if ((r = sys_page_map(0, va, 0, va, (PTE_U | PTE_P | PTE_COW))) < 0) {
 			return r;
 		} 
 	} else {
-		if ((r = sys_page_map(0, pn << 12, envid, pn << 12, pte & PTE_SYSCALL) < 0) {
+		if ((r = sys_page_map(0, va, envid, va, pte & PTE_SYSCALL)) < 0) {
 			return r;
 		}
 	}
@@ -129,7 +130,7 @@ fork(void)
 	for (addr = 0; addr < (uint8_t *)UTOP; addr += PGSIZE) {
 		if (uvpd[PDX(addr)] & PTE_P) {
 			if (uvpt[PGNUM(addr)] & PTE_P) {
-				if (addr >= UXSTACKTOP - PGSIZE && addr < UXSTACKTOP) continue;
+				if (addr >= (uint8_t *)(UXSTACKTOP - PGSIZE) && addr < (uint8_t *)UXSTACKTOP) continue;
 				r = duppage(child_envid, PGNUM(addr));
 			}
 		}
@@ -149,7 +150,7 @@ fork(void)
 		return r;
 	}
 
-	return envid;
+	return child_envid;
 }
 
 // Challenge!
