@@ -92,6 +92,24 @@ trap_init(void)
 	H_NAME_DL(17);
 	H_NAME_DL(18);
 	H_NAME_DL(19);
+
+	H_NAME_DL(32);
+	H_NAME_DL(33);
+	H_NAME_DL(34);
+	H_NAME_DL(35);
+	H_NAME_DL(36);
+	H_NAME_DL(37);
+	H_NAME_DL(38);
+	H_NAME_DL(39);
+	H_NAME_DL(40);
+	H_NAME_DL(41);
+	H_NAME_DL(42);
+	H_NAME_DL(43);
+	H_NAME_DL(44);
+	H_NAME_DL(45);
+	H_NAME_DL(46);
+	H_NAME_DL(47);
+
 	H_NAME_DL(48);
 	SETGATE(idt[0], 0, GD_KT, H_NAME(0), 0);
 	SETGATE(idt[1], 0, GD_KT, H_NAME(1), 0);
@@ -114,6 +132,24 @@ trap_init(void)
 	SETGATE(idt[18], 0, GD_KT, H_NAME(18), 0);
 	SETGATE(idt[18], 0, GD_KT, H_NAME(18), 0);
 	SETGATE(idt[19], 0, GD_KT, H_NAME(19), 0);
+
+	SETGATE(idt[32], 0, GD_KT, H_NAME(32), 3);
+	SETGATE(idt[33], 0, GD_KT, H_NAME(33), 3);
+	SETGATE(idt[34], 0, GD_KT, H_NAME(34), 3);
+	SETGATE(idt[35], 0, GD_KT, H_NAME(35), 3);
+	SETGATE(idt[36], 0, GD_KT, H_NAME(36), 3);
+	SETGATE(idt[37], 0, GD_KT, H_NAME(37), 3);
+	SETGATE(idt[38], 0, GD_KT, H_NAME(38), 3);
+	SETGATE(idt[39], 0, GD_KT, H_NAME(39), 3);
+	SETGATE(idt[40], 0, GD_KT, H_NAME(40), 3);
+	SETGATE(idt[41], 0, GD_KT, H_NAME(41), 3);
+	SETGATE(idt[42], 0, GD_KT, H_NAME(42), 3);
+	SETGATE(idt[43], 0, GD_KT, H_NAME(43), 3);
+	SETGATE(idt[44], 0, GD_KT, H_NAME(44), 3);
+	SETGATE(idt[45], 0, GD_KT, H_NAME(45), 3);
+	SETGATE(idt[46], 0, GD_KT, H_NAME(46), 3);
+	SETGATE(idt[47], 0, GD_KT, H_NAME(47), 3);
+
 	SETGATE(idt[48], 0, GD_KT, H_NAME(48), 3);
 
 	// Per-CPU setup 
@@ -217,17 +253,19 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	int ret_val;
 	if (tf->tf_trapno == T_PGFLT) {
 		page_fault_handler(tf);
 		return ;
-	} else if (tf->tf_trapno == T_BRKPT) {
+	}
+	if (tf->tf_trapno == T_BRKPT) {
 		monitor(tf);
 		return ;
-	} else if (tf->tf_trapno == T_SYSCALL) {
-		int ret_val;
+	}
+	if (tf->tf_trapno == T_SYSCALL) {
 		ret_val = syscall(tf->tf_regs.reg_eax, 
-			tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
-			tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+		tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
+		tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 		// Return value on eax
 		tf->tf_regs.reg_eax = ret_val;
 		return ;
@@ -245,6 +283,11 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
+	// Timer Interrupt
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
+		lapic_eoi();
+		sched_yield();
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);

@@ -84,6 +84,24 @@ T(17);
 TN(18);
 TN(19);
 
+// Interrupts starting from 32
+TN(32);
+TN(33);
+TN(34);
+TN(35);
+TN(36);
+TN(37);
+TN(38);
+TN(39);
+TN(40);
+TN(41);
+TN(42);
+TN(43);
+TN(44);
+TN(45);
+TN(46);
+TN(47);
+
 TN(48);
 
 /*
