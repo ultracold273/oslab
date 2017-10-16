@@ -25,6 +25,12 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+	if (!(err & FEC_WR)) {
+		panic("Page fault not on write.");
+	}
+	if (!(uvpt[PGNUM(addr)] & PTE_COW)) {
+		panic("page fault not on copy-on-write.");
+	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -33,8 +39,17 @@ pgfault(struct UTrapframe *utf)
 	//   You should make three system calls.
 
 	// LAB 4: Your code here.
+	r = sys_page_alloc(0, (void *)PFTEMP, PTE_W | PTE_P | PTE_U);
+	if (r < 0) {
+		panic("page alloc failed");
+	}
+	memmove((void *)PFTEMP, (void *)ROUNDDOWN(addr, PGSIZE), PGSIZE);
+	r = sys_page_map(0, (void *)PFTEMP, 0, (void *)ROUNDDOWN(addr, PGSIZE), PTE_W | PTE_P | PTE_U);
+	if (r < 0) {
+		panic("page map failed");
+	}
 
-	panic("pgfault not implemented");
+	//panic("pgfault not implemented");
 }
 
 //
@@ -54,7 +69,21 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+	//panic("duppage not implemented");
+	pte_t pte = uvpt[pn];
+	if ((pte & PTE_W) == PTE_W || (pte & PTE_COW) == PTE_COW) {
+		if ((r = sys_page_map(0, pn << 12, envid, pn << 12,(PTE_U | PTE_P | PTE_COW))) < 0) {
+			return r;
+		}
+		// UVPT cannot write by user, have to call kernel to map it
+		if ((r = sys_page_map(0, pn << 12, 0, pn << 12, (PTE_U | PTE_P | PTE_COW))) < 0) {
+			return r;
+		} 
+	} else {
+		if ((r = sys_page_map(0, pn << 12, envid, pn << 12, pte & PTE_SYSCALL) < 0) {
+			return r;
+		}
+	}
 	return 0;
 }
 
@@ -79,23 +108,48 @@ fork(void)
 {
 	// LAB 4: Your code here.
 	// panic("fork not implemented");
-	envid_t envid; 
+	envid_t child_envid; 
 	uint8_t *addr;
+	int r; 
+	int i;
 	// Install page fault handler
 	set_pgfault_handler(pgfault);
 
 	// Create the child process;
-	if ((envid = sys_exofork()) < 0) {
+	if ((child_envid = sys_exofork()) < 0) {
 		panic("sys_exofork() failed.\n");
-	} else if (envid == 0) {
+	} else if (child_envid == 0) {
+		thisenv = &envs[ENVX(sys_getenvid())];
 		return 0;
 	}
 
 	// Parent's job: copy the address space
-	for(addr = (uint8_t *)UTEXT; addr < (uint8_t *)UTOP; addr += PGSIZE) {
-		duppage();
+	// How to access the page directories and page tables in the user space
+	// UVPT come to help
+	for (addr = 0; addr < (uint8_t *)UTOP; addr += PGSIZE) {
+		if (uvpd[PDX(addr)] & PTE_P) {
+			if (uvpt[PGNUM(addr)] & PTE_P) {
+				if (addr >= UXSTACKTOP - PGSIZE && addr < UXSTACKTOP) continue;
+				r = duppage(child_envid, PGNUM(addr));
+			}
+		}
 	}
-	
+
+	if ((r = sys_page_alloc(child_envid, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_P | PTE_W)) < 0) {
+		return r;
+	}
+
+	// All done, register the pgfault with child process
+	// cannot directly assign pgfault as the call, needs an additional wrapper upcall
+	if ((r = sys_env_set_pgfault_upcall(child_envid, thisenv->env_pgfault_upcall)) < 0) {
+		return r;
+	}
+	// Mark the child process as runnable
+	if ((r = sys_env_set_status(child_envid, ENV_RUNNABLE)) < 0) {
+		return r;
+	}
+
+	return envid;
 }
 
 // Challenge!
