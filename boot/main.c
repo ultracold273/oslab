@@ -27,6 +27,11 @@
  *    and a stack so C code then run, then calls bootmain()
  *
  *  * bootmain() in this file takes over, reads in the kernel and jumps to it.
+ *  lxwei:
+ *  bootmain() verified the kernel is in a ELF format and loads each program seg
+ *  into the physical memory it specifies. Usually a continuous region above
+ *  ELFHDR (0x10000)
+ * 
  **********************************************************************/
 
 #define SECTSIZE	512
