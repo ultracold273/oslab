@@ -370,7 +370,7 @@ page_fault_handler(struct Trapframe *tf)
 	struct UTrapframe * utrap;
 	// The UXSTACKTOP page shall already be mapped when the user program register its pgfault_upcall.
 	if (curenv->env_pgfault_upcall) {
-		user_mem_assert(curenv, (void *) (UXSTACKTOP - PGSIZE), PGSIZE, PTE_P | PTE_U | PTE_W);
+		user_mem_assert(curenv, curenv->env_pgfault_upcall, PGSIZE, PTE_U);
 		//pte = pgdir_walk(curenv->env_pgdir, (void *)(UXSTACKTOP - PGSIZE), false);
 		// check the permission
 		//if ((*pte & (PTE_P | PTE_U | PTE_W)) == (PTE_P | PTE_U | PTE_W)) {
@@ -384,13 +384,14 @@ page_fault_handler(struct Trapframe *tf)
 			} else {
 				goto destroy;
 			}
+			user_mem_assert(curenv, (void *)(utrap), sizeof(struct UTrapframe), PTE_P | PTE_U | PTE_W);
 			utrap->utf_fault_va = fault_va;
 			utrap->utf_err = tf->tf_err;
 			utrap->utf_regs = tf->tf_regs;
 			utrap->utf_eip = tf->tf_eip; // Trap time eip
 			utrap->utf_eflags = tf->tf_eflags;
 			utrap->utf_esp = tf->tf_esp;
-
+			
 			curenv->env_tf.tf_esp = (uintptr_t) utrap;
 			curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 			env_run(curenv);
