@@ -62,6 +62,7 @@ int	sys_ipc_recv(void *rcv_pg);
 unsigned int sys_time_msec(void);
 
 // This must be inlined.  Exercise for reader: why?
+// prevent extra wrapper of syscall to disorder the register map, as we directly set eax in the kernel as the return value.
 static inline envid_t __attribute__((always_inline))
 sys_exofork(void)
 {
