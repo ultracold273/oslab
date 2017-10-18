@@ -72,7 +72,11 @@ duppage(envid_t envid, unsigned pn)
 	//panic("duppage not implemented");
 	pte_t pte = uvpt[pn];
 	void * va = (void *) (pn * PGSIZE);
-	if ((pte & PTE_W) == PTE_W || (pte & PTE_COW) == PTE_COW) {
+	if ((pte & PTE_SHARE) == PTE_SHARE) {
+		if ((r = sys_page_map(0, va, envid, va, pte & PTE_SYSCALL)) < 0) {
+			return r;
+		}
+	} else if ((pte & PTE_W) == PTE_W || (pte & PTE_COW) == PTE_COW) {
 		if ((r = sys_page_map(0, va, envid, va,(PTE_U | PTE_P | PTE_COW))) < 0) {
 			return r;
 		}

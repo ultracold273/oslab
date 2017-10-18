@@ -3,7 +3,7 @@
 
 #include "fs.h"
 
-static char *msg = "This is the NEW message of the day!\r\n\r\n";
+static char *msg = "This is the NEW message of the day!\n\n";
 
 void
 fs_test(void)
