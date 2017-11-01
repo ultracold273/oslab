@@ -45,14 +45,17 @@ static void e1000_write_mask(uint32_t off, uint32_t mask, uint32_t val) {
 
 int e1000_send(void * srcaddr, int size) {
     char * baddr;
-    struct e1000_tx_desc *tail = (struct e1000_tx_desc *) KADDR(e1000_read(E1000_TDT));
-    struct e1000_tx_desc *tail_next = ((tail - tx_desc) < NTXDESC) ? tail + 1 : tx_desc;
+    uint32_t tail_idx = e1000_read(E1000_TDT);
+    assert (tail_idx < NTXDESC);
+    // struct e1000_tx_desc *tail = (struct e1000_tx_desc *) KADDR(e1000_read(E1000_TDT));
+    struct e1000_tx_desc *tail = &tx_desc[tail_idx];
+    // struct e1000_tx_desc *tail_next = ((tail - tx_desc) < NTXDESC) ? tail + 1 : tx_desc;
     assert(size < TXBUFSIZE);
-    if (tail_next->upper.fields.status & E1000_TXD_STAT_DD) {
-        baddr = (char *) KADDR(tail_next->buffer_addr);
+    if (tail->upper.fields.status & E1000_TXD_STAT_DD) {
+        baddr = (char *) KADDR(tail->buffer_addr);
         memmove(baddr, srcaddr, size);
-        tail_next->lower.flags.length = size;
-        e1000_write(E1000_TDT, PADDR(tail_next));
+        tail->lower.flags.length = size;
+        e1000_write(E1000_TDT, (tail_idx + 1) % NTXDESC);
     } else {
         return -E_NO_MEM;
     }
