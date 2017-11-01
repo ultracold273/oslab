@@ -1,5 +1,6 @@
 #include <inc/stdio.h>
 #include <inc/error.h>
+#include <inc/string.h>
 
 #include <kern/e1000.h>
 #include <kern/pci.h>
