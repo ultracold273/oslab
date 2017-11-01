@@ -71,6 +71,16 @@ struct e1000_tx_desc {
     } upper;
 }__attribute__((__packed__));
 
+struct e1000_rx_desc {
+    uint64_t buffer_addr; /* Address of the descriptor's data buffer */
+    uint16_t length;     /* Length of data DMAed into data buffer */
+    uint16_t csum;       /* Packet checksum */
+    uint8_t status;      /* Descriptor status */
+    uint8_t errors;      /* Descriptor Errors */
+    uint16_t special;
+}__attribute__((__packed__));
+
+
 #define E1000_TXD_CMD_RS     0x08000000 /* Report Status */
 #define E1000_TXD_STAT_DD    0x00000001 /* Descriptor Done */
 
