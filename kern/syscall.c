@@ -445,7 +445,13 @@ sys_time_msec(void)
 static int
 sys_e1000_send(void *srcva, int size)
 {
-	return e1000_send(srcva, size);
+	return e1000_transmit(srcva, size);
+}
+
+static int
+sys_e1000_recv(void *dstva)
+{
+	return e1000_receive(dstva);
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -493,6 +499,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_time_msec();
 	case SYS_net_send:
 		return sys_e1000_send((void *)a1, (int)a2);
+	case SYS_net_recv:
+		return sys_e1000_recv((void *)a1);
 	default:
 		return -E_INVAL;
 	}

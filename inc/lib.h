@@ -61,6 +61,7 @@ int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 unsigned int sys_time_msec(void);
 int sys_net_send(void *srcva, int size);
+int sys_net_try_receive(void *dstva);
 
 // This must be inlined.  Exercise for reader: why?
 // prevent extra wrapper of syscall to disorder the register map, as we directly set eax in the kernel as the return value.

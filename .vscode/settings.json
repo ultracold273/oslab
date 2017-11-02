@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "etharp.h": "c"
+        "etharp.h": "c",
+        "lib.h": "c"
     }
 }
